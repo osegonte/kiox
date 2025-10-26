@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from app.database import get_supabase
@@ -23,6 +23,30 @@ class Order(BaseModel):
     discount_kobo: int
     total_kobo: int
     created_at: str
+    eta_at: Optional[str] = None
+    confirmed_at: Optional[str] = None
+    delivered_at: Optional[str] = None
+
+@router.get("", response_model=List[Order])
+async def list_orders():
+    """List all orders"""
+    supabase = get_supabase()
+    
+    result = supabase.table('orders').select('*').order('created_at', desc=True).execute()
+    
+    return result.data
+
+@router.get("/{order_id}", response_model=Order)
+async def get_order(order_id: str):
+    """Get order by ID"""
+    supabase = get_supabase()
+    
+    result = supabase.table('orders').select('*').eq('id', order_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    return result.data[0]
 
 @router.post("", response_model=Order)
 async def create_order(order_data: CreateOrder):
@@ -92,12 +116,31 @@ async def create_order(order_data: CreateOrder):
     
     return order
 
-@router.get("/{order_id}", response_model=Order)
-async def get_order(order_id: str):
-    """Get order by ID"""
+@router.put("/{order_id}/status")
+async def update_order_status(order_id: str, status_data: dict):
+    """Update order status"""
     supabase = get_supabase()
     
-    result = supabase.table('orders').select('*').eq('id', order_id).execute()
+    new_status = status_data.get('status')
+    if not new_status:
+        raise HTTPException(status_code=400, detail="Status is required")
+    
+    # Validate status
+    valid_statuses = ['pending', 'confirmed', 'packed', 'out_for_delivery', 'delivered', 'canceled']
+    if new_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    # Update order
+    update_data = {'status': new_status}
+    
+    # Add timestamps
+    from datetime import datetime
+    if new_status == 'confirmed':
+        update_data['confirmed_at'] = datetime.utcnow().isoformat()
+    elif new_status == 'delivered':
+        update_data['delivered_at'] = datetime.utcnow().isoformat()
+    
+    result = supabase.table('orders').update(update_data).eq('id', order_id).execute()
     
     if not result.data:
         raise HTTPException(status_code=404, detail="Order not found")

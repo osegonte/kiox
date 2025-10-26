@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useCart } from '../context/CartContext'
+import ProductForm from '../components/ProductForm'
 
 interface Product {
   id: string
@@ -7,45 +9,281 @@ interface Product {
   category: string
   price_kobo: number
   active: boolean
+  sku: string
+  unit: string
 }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [showForm, setShowForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const { addItem } = useCart()
+
+  const fetchProducts = () => {
+    setLoading(true)
+    fetch('http://localhost:8000/v1/products?active=true')
+      .then(res => res.json())
+      .then(data => {
+        setProducts(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error('Failed to fetch products:', err)
+        setLoading(false)
+      })
+  }
 
   useEffect(() => {
-    fetch('http://localhost:8000/v1/products')
-      .then(res => res.json())
-      .then(setProducts)
+    fetchProducts()
   }, [])
+
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))]
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory
+    return matchesSearch && matchesCategory && p.active
+  })
+
+  const formatCurrency = (kobo: number) => `₦${(kobo / 100).toFixed(2)}`
+
+  const handleAddProduct = () => {
+    setEditingProduct(null)
+    setShowForm(true)
+  }
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product)
+    setShowForm(true)
+  }
+
+  const handleFormClose = () => {
+    setShowForm(false)
+    setEditingProduct(null)
+  }
+
+  const handleFormSave = () => {
+    fetchProducts()
+    setShowForm(false)
+    setEditingProduct(null)
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '400px',
+        color: 'var(--color-text-tertiary)'
+      }}>
+        <p>Loading products...</p>
+      </div>
+    )
+  }
 
   return (
     <div>
-      <h2 className="text-title-large" style={{ marginBottom: 'var(--spacing-xl)' }}>Products</h2>
-      
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Brand</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map(p => (
-              <tr key={p.id}>
-                <td style={{ fontWeight: 600 }}>{p.name}</td>
-                <td>{p.brand}</td>
-                <td>{p.category}</td>
-                <td style={{ fontWeight: 600 }}>₦{(p.price_kobo / 100).toFixed(2)}</td>
-                <td><span className="badge-success">{p.active ? 'Active' : 'Inactive'}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: 'var(--spacing-xl)' 
+      }}>
+        <div>
+          <h2 className="text-title-large">Products</h2>
+          <p style={{ 
+            fontSize: '16px', 
+            color: 'var(--color-text-secondary)',
+            fontWeight: 600,
+            marginTop: 'var(--spacing-xs)'
+          }}>
+            {filteredProducts.length} products available
+          </p>
+        </div>
+        <button onClick={handleAddProduct} className="btn btn-primary">
+          <span>➕</span>
+          Add Product
+        </button>
       </div>
+
+      {/* Search and Filter Bar */}
+      <div style={{
+        display: 'flex',
+        gap: 'var(--spacing-md)',
+        marginBottom: 'var(--spacing-xl)',
+        flexWrap: 'wrap'
+      }}>
+        <input
+          type="text"
+          placeholder="🔍 Search products..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '250px',
+            padding: '12px 16px',
+            fontSize: '16px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border)',
+            backgroundColor: 'var(--color-bg-primary)',
+            minHeight: '44px'
+          }}
+        />
+
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          style={{
+            padding: '12px 16px',
+            fontSize: '16px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border)',
+            backgroundColor: 'var(--color-bg-primary)',
+            cursor: 'pointer',
+            minHeight: '44px',
+            fontWeight: 600
+          }}
+        >
+          {categories.map(cat => (
+            <option key={cat} value={cat}>
+              {cat === 'all' ? 'All Categories' : cat}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Products Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: 'var(--spacing-lg)'
+      }}>
+        {filteredProducts.map(product => (
+          <div
+            key={product.id}
+            className="card"
+            style={{
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = 'var(--shadow-md)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'var(--shadow-sm)'
+            }}
+          >
+            <div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: 'var(--spacing-sm)'
+              }}>
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  color: 'var(--color-text-primary)',
+                  marginBottom: 'var(--spacing-xs)',
+                  flex: 1
+                }}>
+                  {product.name}
+                </h3>
+                <button
+                  onClick={() => handleEditProduct(product)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '20px',
+                    padding: '4px',
+                    color: 'var(--color-primary)'
+                  }}
+                  title="Edit product"
+                >
+                  ✏️
+                </button>
+              </div>
+
+              <span className="badge badge-purple" style={{ marginBottom: 'var(--spacing-sm)' }}>
+                {product.category}
+              </span>
+
+              <p style={{
+                color: 'var(--color-text-secondary)',
+                fontSize: '14px',
+                marginBottom: 'var(--spacing-md)'
+              }}>
+                {product.brand} • SKU: {product.sku}
+              </p>
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 'var(--spacing-md)'
+              }}>
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: 700,
+                  color: 'var(--color-primary)'
+                }}>
+                  {formatCurrency(product.price_kobo)}
+                </div>
+                <span style={{
+                  fontSize: '14px',
+                  color: 'var(--color-text-tertiary)',
+                  fontWeight: 600
+                }}>
+                  per {product.unit}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => addItem(product)}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              <span>🛒</span>
+              Add to Cart
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {filteredProducts.length === 0 && (
+        <div style={{
+          textAlign: 'center',
+          padding: 'var(--spacing-2xl)',
+          color: 'var(--color-text-tertiary)'
+        }}>
+          <p style={{ fontSize: '48px', marginBottom: 'var(--spacing-md)' }}>📦</p>
+          <p style={{ fontSize: '18px', marginBottom: 'var(--spacing-md)' }}>No products found</p>
+          <button onClick={handleAddProduct} className="btn btn-primary">
+            <span>➕</span>
+            Add Your First Product
+          </button>
+        </div>
+      )}
+
+      {/* Product Form Modal */}
+      {showForm && (
+        <ProductForm
+          product={editingProduct}
+          onClose={handleFormClose}
+          onSave={handleFormSave}
+        />
+      )}
     </div>
   )
 }
