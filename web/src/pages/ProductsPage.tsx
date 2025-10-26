@@ -1,8 +1,7 @@
-import { API_URL } from '../config'
-import { API_URL } from '../config'
 import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import ProductForm from '../components/ProductForm'
+import { API_URL } from '../config'
 
 interface Product {
   id: string
@@ -26,7 +25,7 @@ export default function ProductsPage() {
 
   const fetchProducts = () => {
     setLoading(true)
-    fetch('${API_URL}/v1/products?active=true')
+    fetch(`${API_URL}/v1/products?active=true`)
       .then(res => res.json())
       .then(data => {
         setProducts(data)
@@ -113,7 +112,6 @@ export default function ProductsPage() {
         </button>
       </div>
 
-      {/* Search and Filter Bar */}
       <div style={{
         display: 'flex',
         gap: 'var(--spacing-md)',
@@ -159,7 +157,6 @@ export default function ProductsPage() {
         </select>
       </div>
 
-      {/* Products Grid */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -278,7 +275,6 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Product Form Modal */}
       {showForm && (
         <ProductForm
           product={editingProduct}
