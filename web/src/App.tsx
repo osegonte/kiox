@@ -1,40 +1,32 @@
 import { useState, useEffect } from 'react'
-import './App.css'
+import ProductsPage from './pages/ProductsPage'
+import OrdersPage from './pages/OrdersPage'
 
 function App() {
-  const [health, setHealth] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState('products')
 
   useEffect(() => {
-    fetch('http://localhost:8000/health')
-      .then(res => res.json())
-      .then(data => {
-        setHealth(data)
-        setLoading(false)
-      })
-      .catch(err => {
-        console.error('API health check failed:', err)
-        setLoading(false)
-      })
+    const handlePopState = () => {
+      setPage(window.location.pathname === '/orders' ? 'orders' : 'products')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    handlePopState()
+
+    return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  return (
-    <div className="App">
-      <h1>Kiox Admin</h1>
-      <div className="card">
-        {loading ? (
-          <p>Checking API connection...</p>
-        ) : health ? (
-          <div>
-            <p>✅ API Status: {health.status}</p>
-            <p>Version: {health.version}</p>
-          </div>
-        ) : (
-          <p>❌ API connection failed</p>
-        )}
-      </div>
-    </div>
-  )
+  const navigate = (path: string) => {
+    window.history.pushState({}, '', path)
+    setPage(path === '/orders' ? 'orders' : 'products')
+  }
+
+  // Simple routing
+  if (page === 'orders') {
+    return <OrdersPage />
+  }
+
+  return <ProductsPage />
 }
 
 export default App
