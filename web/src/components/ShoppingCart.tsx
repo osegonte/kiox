@@ -1,5 +1,6 @@
 import { useCart } from '../context/CartContext'
 import { useState } from 'react'
+import { API_URL } from '../config'
 
 export default function ShoppingCart() {
   const { items, removeItem, updateQuantity, totalPrice, isOpen, closeCart, clearCart } = useCart()
@@ -11,9 +12,8 @@ export default function ShoppingCart() {
   const handleCheckout = async () => {
     setIsSubmitting(true)
     
-    // Create order
     try {
-      const response = await fetch('http://localhost:8000/v1/orders', {
+      const response = await fetch(`${API_URL}/v1/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
