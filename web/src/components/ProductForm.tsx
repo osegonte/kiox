@@ -1,3 +1,5 @@
+import { API_URL } from '../config'
+import { API_URL } from '../config'
 import { useState, useEffect } from 'react'
 
 interface ProductFormProps {
@@ -40,8 +42,8 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
 
     try {
       const url = product 
-        ? `http://localhost:8000/v1/products/${product.id}`
-        : 'http://localhost:8000/v1/products'
+        ? `${API_URL}/v1/products/${product.id}`
+        : '${API_URL}/v1/products'
       
       const method = product ? 'PUT' : 'POST'
 

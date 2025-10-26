@@ -1,3 +1,5 @@
+import { API_URL } from '../config'
+import { API_URL } from '../config'
 import { useState, useEffect } from 'react'
 
 interface Order {
@@ -28,7 +30,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://localhost:8000/v1/orders')
+      const response = await fetch('${API_URL}/v1/orders')
       if (!response.ok) {
         throw new Error('Failed to fetch orders')
       }
@@ -47,7 +49,7 @@ export default function OrdersPage() {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingOrderId(orderId)
     try {
-      const response = await fetch(`http://localhost:8000/v1/orders/${orderId}/status`, {
+      const response = await fetch(`${API_URL}/v1/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })

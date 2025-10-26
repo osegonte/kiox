@@ -1,3 +1,4 @@
+import { API_URL } from '../config'
 export default function ComingSoon({ feature }: { feature: string }) {
   return (
     <div className="coming-soon">

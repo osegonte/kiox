@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { API_URL } from '../config'
 
 interface Order {
   id: string
@@ -30,7 +31,7 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/v1/orders')
+      const response = await fetch(`${API_URL}/v1/orders`)
       const orders: Order[] = await response.json()
 
       const today = new Date()

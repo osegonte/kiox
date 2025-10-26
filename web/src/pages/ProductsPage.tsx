@@ -1,3 +1,5 @@
+import { API_URL } from '../config'
+import { API_URL } from '../config'
 import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import ProductForm from '../components/ProductForm'
@@ -24,7 +26,7 @@ export default function ProductsPage() {
 
   const fetchProducts = () => {
     setLoading(true)
-    fetch('http://localhost:8000/v1/products?active=true')
+    fetch('${API_URL}/v1/products?active=true')
       .then(res => res.json())
       .then(data => {
         setProducts(data)
