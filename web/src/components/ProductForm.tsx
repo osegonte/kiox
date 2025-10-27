@@ -42,7 +42,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
     try {
       const url = product 
         ? `${API_URL}/v1/products/${product.id}`
-        : '${API_URL}/v1/products'
+        : `${API_URL}/v1/products`
       
       const method = product ? 'PUT' : 'POST'
 

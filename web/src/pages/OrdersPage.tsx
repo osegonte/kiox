@@ -29,7 +29,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('${API_URL}/v1/orders')
+      const response = await fetch(`${API_URL}/v1/orders`)
       if (!response.ok) {
         throw new Error('Failed to fetch orders')
       }
